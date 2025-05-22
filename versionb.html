@@ -60,26 +60,30 @@
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
 
 <script>
+    // MAIN FIREBASE SCRIPT AT THE BOTTOM - versionB.html
     const firebaseConfig = {
-        apiKey: "AIzaSyBtHLjsIq1UmdXpsAHb3G6eEXm_y4Oy63A",
+        apiKey: "AIzaSyBtHLjsIq1UmdXpsAHb3G6eEXm_y4Oy63A", // YOUR KEY
         authDomain: "abtesting-b5e74.firebaseapp.com",
         projectId: "abtesting-b5e74",
         storageBucket: "abtesting-b5e74.appspot.com",
         messagingSenderId: "666001775188",
-        appId: "1:666001775188:web:621a429527a9869f946bc1"
+        appId: "1:666001775188:web:621a429527a9869f946bc1" // YOUR APP ID
       };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
     const urlParams = new URLSearchParams(window.location.search);
-    const pageVersion = urlParams.get('version') || 'B';
-    const isRevisit = urlParams.get('revisit') === 'true'; // Check for revisit flag
+    const pageVersion = urlParams.get('version') || 'B'; // Default for this file
+
+    const experimentKeyForSession = 'boxingClassABTest_v1';
+    const conversionLoggedSessionKey = `${experimentKeyForSession}_conversionLogged_session_for_${pageVersion}`;
 
     async function logImpression() {
-        if (isRevisit) {
-            console.log(`Revisit (Version B): Impression not logged.`);
-            return; // Do not log impression if it's a revisit
+        if (!pageVersion) {
+            console.warn("No pageVersion found. Impression not logged.");
+            return;
         }
+        // Head script now robustly handles newbie session seen logic for impressions.
         try {
             await db.collection("ab_test_events").add({
                 versionShown: pageVersion,
@@ -95,28 +99,44 @@
     }
     logImpression();
 
-    async function handleConversion(buttonIdClicked, buttonTextClicked) {
-        if (isRevisit) {
-            console.log(`Revisit (Version B): Conversion for ${buttonIdClicked} not logged.`);
-            window.location.href = "thankyou.html"; // Still redirect to thank you page for consistent UX
-            return; // Do not log conversion if it's a revisit
+    async function handleConversion(clickedButtonElement, buttonIdClicked, originalButtonText) {
+        if (!pageVersion) {
+            console.warn("No pageVersion found. Conversion not logged. Redirecting to thank you.");
+            window.location.href = "thankyou.html";
+            return;
         }
+
+        if (clickedButtonElement) {
+            clickedButtonElement.disabled = true;
+            clickedButtonElement.textContent = 'Processing...';
+        }
+
+        if (sessionStorage.getItem(conversionLoggedSessionKey) === 'true') {
+            console.log(`Conversion already logged this session for ${pageVersion} (button ${buttonIdClicked}). Redirecting to thank you.`);
+            window.location.href = "thankyou.html";
+            return;
+        }
+
         try {
             await db.collection("ab_test_events").add({
                 versionShown: pageVersion,
                 event: "conversion",
                 buttonId: buttonIdClicked,
-                buttonText: buttonTextClicked,
+                buttonText: originalButtonText,
                 timestamp: firebase.firestore.FieldValue.serverTimestamp(),
                 userAgent: navigator.userAgent,
                 url: window.location.href
             });
             console.log(`Conversion logged for version ${pageVersion}, button: ${buttonIdClicked}`);
+            sessionStorage.setItem(conversionLoggedSessionKey, 'true');
             window.location.href = "thankyou.html";
         } catch (error) {
-            console.error("Error logging conversion: ", error);
-            // Optionally redirect even on error, or show an error message
-            // window.location.href = "thankyou.html";
+            console.error(`Error logging conversion for ${buttonIdClicked}: `, error);
+            if (clickedButtonElement) {
+                clickedButtonElement.disabled = false;
+                clickedButtonElement.textContent = originalButtonText;
+            }
+            // alert("An error occurred while processing your request. Please try again.");
         }
     }
 
@@ -124,16 +144,16 @@
     const boxingMaxButtonB = document.getElementById('joinBoxingMaxButtonB');
 
     if (fightForgeButton) {
-        fightForgeButton.addEventListener('click', (event) => {
+        fightForgeButton.addEventListener('click', function(event) {
             event.preventDefault();
-            handleConversion('joinFightForgeButton', fightForgeButton.textContent.trim());
+            handleConversion(this, 'joinFightForgeButton', 'Join Fight & Forge!');
         });
     }
 
     if (boxingMaxButtonB) {
-        boxingMaxButtonB.addEventListener('click', (event) => {
+        boxingMaxButtonB.addEventListener('click', function(event) {
             event.preventDefault();
-            handleConversion('joinBoxingMaxButtonB', boxingMaxButtonB.textContent.trim());
+            handleConversion(this, 'joinBoxingMaxButtonB', 'Join Boxing with Max!');
         });
     }
 </script>
