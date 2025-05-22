@@ -12,7 +12,7 @@
 
 <header class="bg-dark text-white p-3">
   <div class="container">
-    <h1 class="mb-0">Version B: Discover Your Boxing Style</h1>
+    <h1 class="mb-0">Choose Your Boxing Class</h1>
   </div>
 </header>
 
@@ -78,12 +78,15 @@
     const experimentKeyForSession = 'boxingClassABTest_v1';
     const conversionLoggedSessionKey = `${experimentKeyForSession}_conversionLogged_session_for_${pageVersion}`;
 
+    // Get button elements once
+    const fightForgeButton = document.getElementById('joinFightForgeButton');
+    const boxingMaxButtonB = document.getElementById('joinBoxingMaxButtonB');
+
     async function logImpression() {
         if (!pageVersion) {
             console.warn("No pageVersion found. Impression not logged.");
             return;
         }
-        // Head script now robustly handles newbie session seen logic for impressions.
         try {
             await db.collection("ab_test_events").add({
                 versionShown: pageVersion,
@@ -106,13 +109,18 @@
             return;
         }
 
+        // Disable both buttons
+        if (fightForgeButton) fightForgeButton.disabled = true;
+        if (boxingMaxButtonB) boxingMaxButtonB.disabled = true;
+
+        // Set text only for the clicked button
         if (clickedButtonElement) {
-            clickedButtonElement.disabled = true;
             clickedButtonElement.textContent = 'Processing...';
         }
 
         if (sessionStorage.getItem(conversionLoggedSessionKey) === 'true') {
             console.log(`Conversion already logged this session for ${pageVersion} (button ${buttonIdClicked}). Redirecting to thank you.`);
+            // Buttons will remain disabled as we redirect
             window.location.href = "thankyou.html";
             return;
         }
@@ -129,19 +137,22 @@
             });
             console.log(`Conversion logged for version ${pageVersion}, button: ${buttonIdClicked}`);
             sessionStorage.setItem(conversionLoggedSessionKey, 'true');
+            // Buttons will remain disabled as we redirect
             window.location.href = "thankyou.html";
         } catch (error) {
             console.error(`Error logging conversion for ${buttonIdClicked}: `, error);
+            
+            // Re-enable both buttons
+            if (fightForgeButton) fightForgeButton.disabled = false;
+            if (boxingMaxButtonB) boxingMaxButtonB.disabled = false;
+
+            // Restore original text for the clicked button
             if (clickedButtonElement) {
-                clickedButtonElement.disabled = false;
                 clickedButtonElement.textContent = originalButtonText;
             }
             // alert("An error occurred while processing your request. Please try again.");
         }
     }
-
-    const fightForgeButton = document.getElementById('joinFightForgeButton');
-    const boxingMaxButtonB = document.getElementById('joinBoxingMaxButtonB');
 
     if (fightForgeButton) {
         fightForgeButton.addEventListener('click', function(event) {

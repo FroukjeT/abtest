@@ -7,20 +7,15 @@
     <script>
         const experimentKey = 'boxingClassABTest_v1'; // Unique key for this specific experiment
         const participationFlagKey = `${experimentKey}_participated`;
-        const assignedVersionKey = `${experimentKey}_assignedVersion`;
+        const assignedVersionKey = `${experimentKey}_assignedVersion`; // We'll still store this for potential future use or debugging
 
         // Check if user has participated before in this specific experiment
         const hasParticipated = localStorage.getItem(participationFlagKey);
-        const previouslyAssignedVersion = localStorage.getItem(assignedVersionKey);
 
-        if (hasParticipated && previouslyAssignedVersion) {
-            // User has participated before, send them to their previously assigned version with a revisit flag
-            console.log(`User has participated. Re-assigning to version: ${previouslyAssignedVersion} as revisit.`);
-            if (previouslyAssignedVersion === 'A') {
-                window.location.href = `versionA.html?version=A&revisit=true`;
-            } else { // Must be 'B'
-                window.location.href = `versionB.html?version=B&revisit=true`;
-            }
+        if (hasParticipated) {
+            // User has participated before, redirect them to the "already participated" page
+            console.log(`User has participated. Redirecting to already_participated.html.`);
+            window.location.href = `already_participated.html`;
         } else {
             // First time participation for this experiment
             console.log("First time participation in this experiment.");
@@ -41,9 +36,5 @@
 </head>
 <body>
     <p>If you are not redirected automatically, please refresh the page or clear your browser's site data for this page and try again.</p>
-    <!--
-        A manual link is harder here because the localStorage logic runs first.
-        If JS is disabled, this page won't work as intended anyway.
-    -->
 </body>
 </html>
