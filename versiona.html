@@ -7,50 +7,46 @@
 
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
   <link rel="stylesheet" href="css/style.css">
+
+    <script>
+    // SCRIPT AT THE TOP OF <HEAD> - CORRECTED LOGIC
+    const experimentKey = 'boxingClassABTest_v1';
+    const participationFlagKey = `${experimentKey}_participated`;
+    // const assignedVersionKey = `${experimentKey}_assignedVersion`; // We don't strictly need to read this here for the redirect
+
+    const urlParamsForEarlyCheck = new URLSearchParams(window.location.search);
+    const versionFromUrl = urlParamsForEarlyCheck.get('version');
+
+    const hasParticipated = localStorage.getItem(participationFlagKey);
+
+    if (hasParticipated === 'true') {
+        // If the participation flag is set for ANY reason, they've been through the experiment.
+        // Redirect them, regardless of what version URL they are trying to access directly.
+        console.log("User has 'participated' flag set. Redirecting to already_participated.html from version page head script.");
+        window.location.href = 'already_participated.html';
+    } else if (!versionFromUrl) {
+        // If they haven't participated, but there's no ?version=A/B parameter,
+        // they accessed this page incorrectly. Send them to index.html.
+        console.log("Direct access to version page without version parameter. Redirecting to index.html.");
+        window.location.href = 'index.html';
+    }
+    // If neither of the above conditions are met:
+    // 1. They have NOT participated (participationFlagKey is null or not 'true').
+    // 2. They HAVE a versionFromUrl (e.g., ?version=A).
+    // This means they are likely a new user correctly routed by index.html.
+    // So, we let the page load normally.
+  </script>
 </head>
 <body>
+    <!-- ... Rest of your versionA.html body content (header, main, footer) ... -->
+    <!-- MAKE SURE THE FIREBASE SCRIPT IS BELOW THIS CONTENT -->
 
 <header class="bg-dark text-white p-3">
   <div class="container">
     <h1 class="mb-0">Version A: Choose Your Boxing Class</h1>
   </div>
 </header>
-
-<main class="py-5 bg-light">
-  <div class="container">
-    <p class="text-center mb-5">Both classes are scheduled for <strong>Thursday, 18:00 - 19:00</strong>. Same content, different vibe — pick your favorite!</p>
-    <div class="row">
-      <div class="col-md-6">
-        <div class="card mb-4 shadow-sm">
-          <img src="2.jpg" class="card-img-top" style="height:250px; object-fit:cover; width:100%;" alt="PowerBox class">
-          <div class="card-body">
-            <h5 class="card-title">Punch & Power</h5>
-            <p class="card-text">An intense full-body workout with boxing combos, strength circuits, and high-energy music. Perfect for all levels!</p>
-            <p class="text-muted">Thursday • 18:00 – 19:00</p>
-            <button id="joinPunchPowerButton" class="btn btn-primary btn-block">Join Punch & Power!</button>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-6">
-        <div class="card mb-4 shadow-sm">
-          <img src="2.jpg" class="card-img-top" style="height:250px; object-fit:cover; width:100%;" alt="Boxing with Max class">
-          <div class="card-body">
-            <h5 class="card-title">Boxing with Max!</h5>
-            <p class="card-text">An intense full-body workout with boxing combos, strength circuits, and high-energy music. Perfect for all levels!</p>
-            <p class="text-muted">Thursday • 18:00 – 19:00</p>
-            <button id="joinBoxingMaxButton" class="btn btn-primary btn-block">Join Boxing with Max!</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</main>
-
-<footer class="bg-dark text-white text-center py-3">
-  <div class="container">
-    <p class="mb-0">© 2025 Boxing Club</p>
-  </div>
-</footer>
+<!-- ... etc ... main content ... footer ... -->
 
 <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/popper.js@1.12.9/dist/umd/popper.min.js"></script>
@@ -60,26 +56,27 @@
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
 
 <script>
+    // This script now assumes it's only reached by "new" users
+    // or that the early check script above has handled redirects for participated users.
+
     const firebaseConfig = {
-        apiKey: "AIzaSyBtHLjsIq1UmdXpsAHb3G6eEXm_y4Oy63A",
+        apiKey: "AIzaSyBtHLjsIq1UmdXpsAHb3G6eEXm_y4Oy63A", // Your actual API key
         authDomain: "abtesting-b5e74.firebaseapp.com",
         projectId: "abtesting-b5e74",
         storageBucket: "abtesting-b5e74.appspot.com",
         messagingSenderId: "666001775188",
-        appId: "1:666001775188:web:621a429527a9869f946bc1"
+        appId: "1:666001775188:web:621a429527a9869f946bc1" // Your actual App ID
       };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
     const urlParams = new URLSearchParams(window.location.search);
-    const pageVersion = urlParams.get('version') || 'A';
-    const isRevisit = urlParams.get('revisit') === 'true'; // Check for revisit flag
+    const pageVersion = urlParams.get('version') || 'A'; // Or 'B' for versionB.html
+
+    // No more 'isRevisit' check needed here if using the "already_participated.html" flow
+    // and the early <script> in <head> handles redirects.
 
     async function logImpression() {
-        if (isRevisit) {
-            console.log(`Revisit (Version A): Impression not logged.`);
-            return; // Do not log impression if it's a revisit
-        }
         try {
             await db.collection("ab_test_events").add({
                 versionShown: pageVersion,
@@ -93,14 +90,14 @@
             console.error("Error logging impression: ", error);
         }
     }
-    logImpression();
+    // Only log impression if the early check didn't redirect
+    // The early check should prevent this script from running fully if a redirect happens
+    if (!(localStorage.getItem(participationFlagKey) === 'true' && localStorage.getItem(assignedVersionKey)) && pageVersion) {
+        logImpression();
+    }
+
 
     async function handleConversion(buttonIdClicked, buttonTextClicked) {
-        if (isRevisit) {
-            console.log(`Revisit (Version A): Conversion for ${buttonIdClicked} not logged.`);
-            window.location.href = "thankyou.html"; // Still redirect to thank you page for consistent UX
-            return; // Do not log conversion if it's a revisit
-        }
         try {
             await db.collection("ab_test_events").add({
                 versionShown: pageVersion,
@@ -115,11 +112,10 @@
             window.location.href = "thankyou.html";
         } catch (error) {
             console.error("Error logging conversion: ", error);
-            // Optionally redirect even on error, or show an error message
-            // window.location.href = "thankyou.html";
         }
     }
 
+    // Attach event listeners
     const punchPowerButton = document.getElementById('joinPunchPowerButton');
     const boxingMaxButton = document.getElementById('joinBoxingMaxButton');
 
