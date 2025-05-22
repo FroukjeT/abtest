@@ -7,35 +7,6 @@
 
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
   <link rel="stylesheet" href="css/style.css">
-
-  <script>
-    // SCRIPT AT THE TOP OF <HEAD>
-    const experimentKey = 'boxingClassABTest_v1';
-    const participationFlagKey = `${experimentKey}_participated`;
-
-    const urlParamsForEarlyCheck = new URLSearchParams(window.location.search);
-    const versionFromUrl = urlParamsForEarlyCheck.get('version');
-    const isNewbieComingFromIndex = urlParamsForEarlyCheck.get('newbie') === 'true';
-
-    const hasParticipatedFlagInStorage = localStorage.getItem(participationFlagKey);
-
-    let shouldRedirect = false;
-    let redirectTo = '';
-
-    if (hasParticipatedFlagInStorage === 'true' && !isNewbieComingFromIndex) {
-        console.log("VERSION PAGE HEAD (B): User has 'participated' flag and is NOT a 'newbie'. Redirecting to already_participated.html.");
-        shouldRedirect = true;
-        redirectTo = 'already_participated.html';
-    } else if (!versionFromUrl && !isNewbieComingFromIndex) {
-        console.log("VERSION PAGE HEAD (B): Direct access without version parameter (and not a newbie). Redirecting to index.html.");
-        shouldRedirect = true;
-        redirectTo = 'index.html';
-    }
-
-    if (shouldRedirect) {
-        window.location.href = redirectTo;
-    }
-  </script>
 </head>
 <body>
 
@@ -90,23 +61,24 @@
 
 <script>
     const firebaseConfig = {
-        apiKey: "AIzaSyBtHLjsIq1UmdXpsAHb3G6eEXm_y4Oy63A", // Your actual API key
+        apiKey: "AIzaSyBtHLjsIq1UmdXpsAHb3G6eEXm_y4Oy63A",
         authDomain: "abtesting-b5e74.firebaseapp.com",
         projectId: "abtesting-b5e74",
         storageBucket: "abtesting-b5e74.appspot.com",
         messagingSenderId: "666001775188",
-        appId: "1:666001775188:web:621a429527a9869f946bc1" // Your actual App ID
+        appId: "1:666001775188:web:621a429527a9869f946bc1"
       };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
     const urlParams = new URLSearchParams(window.location.search);
-    const pageVersion = urlParams.get('version') || 'B'; // Default for this file
+    const pageVersion = urlParams.get('version') || 'B';
+    const isRevisit = urlParams.get('revisit') === 'true'; // Check for revisit flag
 
     async function logImpression() {
-        if (!pageVersion) {
-            console.warn("No pageVersion found in URL on version page. Impression not logged.");
-            return;
+        if (isRevisit) {
+            console.log(`Revisit (Version B): Impression not logged.`);
+            return; // Do not log impression if it's a revisit
         }
         try {
             await db.collection("ab_test_events").add({
@@ -124,10 +96,10 @@
     logImpression();
 
     async function handleConversion(buttonIdClicked, buttonTextClicked) {
-        if (!pageVersion) {
-            console.warn("No pageVersion found in URL on version page. Conversion not logged. Redirecting to thank you.");
-            window.location.href = "thankyou.html";
-            return;
+        if (isRevisit) {
+            console.log(`Revisit (Version B): Conversion for ${buttonIdClicked} not logged.`);
+            window.location.href = "thankyou.html"; // Still redirect to thank you page for consistent UX
+            return; // Do not log conversion if it's a revisit
         }
         try {
             await db.collection("ab_test_events").add({
@@ -143,6 +115,8 @@
             window.location.href = "thankyou.html";
         } catch (error) {
             console.error("Error logging conversion: ", error);
+            // Optionally redirect even on error, or show an error message
+            // window.location.href = "thankyou.html";
         }
     }
 

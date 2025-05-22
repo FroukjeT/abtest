@@ -5,31 +5,45 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Redirecting...</title>
     <script>
-        const experimentKey = 'boxingClassABTest_v1';
+        const experimentKey = 'boxingClassABTest_v1'; // Unique key for this specific experiment
         const participationFlagKey = `${experimentKey}_participated`;
         const assignedVersionKey = `${experimentKey}_assignedVersion`;
 
+        // Check if user has participated before in this specific experiment
         const hasParticipated = localStorage.getItem(participationFlagKey);
         const previouslyAssignedVersion = localStorage.getItem(assignedVersionKey);
 
-        if (hasParticipated === 'true' && previouslyAssignedVersion) {
-            console.log("INDEX: User has participated flag and stored version. Redirecting to already_participated.html.");
-            window.location.href = 'already_participated.html';
+        if (hasParticipated && previouslyAssignedVersion) {
+            // User has participated before, send them to their previously assigned version with a revisit flag
+            console.log(`User has participated. Re-assigning to version: ${previouslyAssignedVersion} as revisit.`);
+            if (previouslyAssignedVersion === 'A') {
+                window.location.href = `versionA.html?version=A&revisit=true`;
+            } else { // Must be 'B'
+                window.location.href = `versionB.html?version=B&revisit=true`;
+            }
         } else {
-            console.log("INDEX: New user or incomplete previous participation. Assigning version and setting flag.");
-            localStorage.setItem(participationFlagKey, 'true');
-            const versionToAssign = Math.random() < 0.5 ? 'A' : 'B';
-            localStorage.setItem(assignedVersionKey, versionToAssign);
+            // First time participation for this experiment
+            console.log("First time participation in this experiment.");
+            localStorage.setItem(participationFlagKey, 'true'); // Set participation flag for this experiment
 
-            if (versionToAssign === 'A') {
-                window.location.href = `versionA.html?version=A&newbie=true`;
-            } else { // versionToAssign === 'B'
-                window.location.href = `versionB.html?version=B&newbie=true`;
+            // Decide which version to show (A or B)
+            const version = Math.random() < 0.5 ? 'A' : 'B';
+            localStorage.setItem(assignedVersionKey, version); // Store assigned version for this experiment
+
+            // Redirect to the chosen version
+            if (version === 'A') {
+                window.location.href = `versionA.html?version=A`;
+            } else {
+                window.location.href = `versionB.html?version=B`;
             }
         }
     </script>
 </head>
 <body>
-    <p>Redirecting...</p>
+    <p>If you are not redirected automatically, please refresh the page or clear your browser's site data for this page and try again.</p>
+    <!--
+        A manual link is harder here because the localStorage logic runs first.
+        If JS is disabled, this page won't work as intended anyway.
+    -->
 </body>
 </html>
