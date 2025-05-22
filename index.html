@@ -5,40 +5,31 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Redirecting...</title>
     <script>
-        const experimentKey = 'boxingClassABTest_v1'; // Unique key
+        const experimentKey = 'boxingClassABTest_v1';
         const participationFlagKey = `${experimentKey}_participated`;
-        const assignedVersionKey = `${experimentKey}_assignedVersion`; // We still set this for consistency
-
-        // Debugging lines (optional, can remove after testing)
-        // console.log("Checking localStorage for:", participationFlagKey, "Value:", localStorage.getItem(participationFlagKey));
-        // console.log("Checking localStorage for:", assignedVersionKey, "Value:", localStorage.getItem(assignedVersionKey));
+        const assignedVersionKey = `${experimentKey}_assignedVersion`;
 
         const hasParticipated = localStorage.getItem(participationFlagKey);
-        // We don't strictly need previouslyAssignedVersion for this new logic,
-        // but checking it ensures the full participation process completed last time.
-        const previouslyAssignedVersionExists = localStorage.getItem(assignedVersionKey);
+        const previouslyAssignedVersion = localStorage.getItem(assignedVersionKey);
 
-        if (hasParticipated === 'true' && previouslyAssignedVersionExists) {
-            // User has participated before, redirect them to the "already participated" page
-            console.log(`User has participated. Redirecting to already_participated.html.`);
-            window.location.href = `already_participated.html`; // <-- CHANGE IS HERE
+        if (hasParticipated === 'true' && previouslyAssignedVersion) {
+            console.log("INDEX: User has participated flag and stored version. Redirecting to already_participated.html.");
+            window.location.href = 'already_participated.html';
         } else {
-            // First time participation for this experiment
-            console.log("First time participation in this experiment.");
-            localStorage.setItem(participationFlagKey, 'true'); // Set participation flag
-            localStorage.setItem(assignedVersionKey, Math.random() < 0.5 ? 'A' : 'B'); // Store assigned version
+            console.log("INDEX: New user or incomplete previous participation. Assigning version and setting flag.");
+            localStorage.setItem(participationFlagKey, 'true');
+            const versionToAssign = Math.random() < 0.5 ? 'A' : 'B';
+            localStorage.setItem(assignedVersionKey, versionToAssign);
 
-            const versionToRedirect = localStorage.getItem(assignedVersionKey);
-
-            if (versionToRedirect === 'A') {
-                window.location.href = `versionA.html?version=A`;
-            } else { // Must be 'B'
-                window.location.href = `versionB.html?version=B`;
+            if (versionToAssign === 'A') {
+                window.location.href = `versionA.html?version=A&newbie=true`;
+            } else {
+                window.location.href = `versionB.html?version=B&newbie=true`;
             }
         }
     </script>
 </head>
 <body>
-    <p>If you are not redirected automatically, please refresh the page or clear your browser's site data for this page and try again.</p>
+    <p>Redirecting...</p>
 </body>
 </html>

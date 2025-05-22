@@ -8,8 +8,8 @@
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
   <link rel="stylesheet" href="css/style.css">
 
-  <script>
-    // SCRIPT AT THE TOP OF <HEAD> - CORRECTED LOGIC
+    <script>
+    // SCRIPT AT THE TOP OF <HEAD>
     const experimentKey = 'boxingClassABTest_v1';
     const participationFlagKey = `${experimentKey}_participated`;
 
@@ -23,27 +23,18 @@
     let redirectTo = '';
 
     if (hasParticipatedFlagInStorage === 'true' && !isNewbieComingFromIndex) {
-        // Case 1: User has participated before and is NOT a newbie just sent from index.html
-        // This means they are trying to access this page directly after a previous full participation.
         console.log("VERSION PAGE HEAD: User has 'participated' flag and is NOT a 'newbie'. Redirecting to already_participated.html.");
         shouldRedirect = true;
         redirectTo = 'already_participated.html';
     } else if (!versionFromUrl && !isNewbieComingFromIndex) {
-        // Case 2: No version parameter in the URL, AND they are not a newbie.
-        // (A newbie would always have a version parameter from index.html).
-        // This is an incorrect direct access for someone who might not have participated yet.
         console.log("VERSION PAGE HEAD: Direct access without version parameter (and not a newbie). Redirecting to index.html.");
         shouldRedirect = true;
         redirectTo = 'index.html';
     }
-    // Note: If a user IS a newbie (isNewbieComingFromIndex === true),
-    // they will have a versionFromUrl, so neither of the above conditions will be met,
-    // and shouldRedirect will remain false, allowing the page to load.
 
     if (shouldRedirect) {
         window.location.href = redirectTo;
     }
-    // If no redirect happened, the page loads normally.
   </script>
 </head>
 <body>
