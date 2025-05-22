@@ -7,12 +7,64 @@
 
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
   <link rel="stylesheet" href="css/style.css">
+  <script>
+    // SCRIPT PART 1: Pre-content logic (redirects if necessary)
+    (function() { // IIFE to encapsulate vars
+        const experimentKey = 'boxingClassABTest_v1';
+        const participationFlagKey = `${experimentKey}_participated`;
+        const assignedVersionKey = `${experimentKey}_assignedVersion`;
+        const versionPageLoadedSessionKey = `${experimentKey}_versionPageLoaded_session`;
+
+        window.ABTestShouldProceed = true; // Global flag, assume proceed initially
+        const currentUrlParams = new URLSearchParams(window.location.search);
+        const versionFromUrl = currentUrlParams.get('version');
+        window.ABTestPageVersion = versionFromUrl; // Make version available globally
+
+        if (!versionFromUrl) { // Should have a version from index.html
+            console.warn("Version parameter missing in URL. Redirecting to index.html.");
+            window.location.href = 'index.html';
+            window.ABTestShouldProceed = false;
+            return;
+        }
+
+        const hasParticipatedExperiment = localStorage.getItem(participationFlagKey);
+        const actualAssignedVersion = localStorage.getItem(assignedVersionKey);
+
+        if (!hasParticipatedExperiment) {
+            console.log(`User has not participated in experiment ${experimentKey} or bypassed entry. Redirecting to index.html.`);
+            window.location.href = 'index.html';
+            window.ABTestShouldProceed = false;
+            return;
+        }
+
+        if (versionFromUrl !== actualAssignedVersion) {
+            console.log(`User is on version ${versionFromUrl}, but was assigned ${actualAssignedVersion}. Redirecting to already_participated.html.`);
+            window.location.href = 'already_participated.html';
+            window.ABTestShouldProceed = false;
+            return;
+        }
+
+        // User has participated and is on their correctly assigned version page.
+        // Now check if this is a reload/revisit within the same session.
+        if (sessionStorage.getItem(versionPageLoadedSessionKey) === `loaded_${versionFromUrl}`) {
+            console.log(`Version ${versionFromUrl} page reloaded/revisited in this session. Redirecting to already_participated.html.`);
+            window.location.href = 'already_participated.html';
+            window.ABTestShouldProceed = false;
+            return;
+        } else {
+            // This is the first legitimate load of this specific version page in this session.
+            console.log(`First legitimate load of version ${versionFromUrl} in this session. Marking as loaded and proceeding.`);
+            sessionStorage.setItem(versionPageLoadedSessionKey, `loaded_${versionFromUrl}`);
+            // window.ABTestShouldProceed remains true
+        }
+    })();
+  </script>
 </head>
 <body>
 
 <header class="bg-dark text-white p-3">
   <div class="container">
-    <h1 class="mb-0">Choose Your Boxing Class</h1>
+    <h1 class="mb-0">Choose Your Boxing Class</h1> <!-- Title for B -->
   </div>
 </header>
 
@@ -24,7 +76,7 @@
         <div class="card mb-4 shadow-sm">
           <img src="2.jpg" class="card-img-top" style="height:250px; object-fit:cover; width:100%;" alt="Fight & Forge class">
           <div class="card-body">
-            <h5 class="card-title">Fight & Forge</h5>
+            <h5 class="card-title">Fight & Forge</h5> <!-- Card for B -->
             <p class="card-text">An intense full-body workout with boxing combos, strength circuits, and high-energy music. Perfect for all levels!</p>
             <p class="text-muted">Thursday • 18:00 – 19:00</p>
             <button id="joinFightForgeButton" class="btn btn-primary btn-block">Join Fight & Forge!</button>
@@ -60,112 +112,115 @@
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
 
 <script>
-    // MAIN FIREBASE SCRIPT AT THE BOTTOM - versionB.html
-    const firebaseConfig = {
-        apiKey: "AIzaSyBtHLjsIq1UmdXpsAHb3G6eEXm_y4Oy63A", // YOUR KEY
-        authDomain: "abtesting-b5e74.firebaseapp.com",
-        projectId: "abtesting-b5e74",
-        storageBucket: "abtesting-b5e74.appspot.com",
-        messagingSenderId: "666001775188",
-        appId: "1:666001775188:web:621a429527a9869f946bc1" // YOUR APP ID
-      };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
+    // SCRIPT PART 2: Main page logic (only if pre-checks passed)
+    if (window.ABTestShouldProceed) {
+        const firebaseConfig = {
+            apiKey: "AIzaSyBtHLjsIq1UmdXpsAHb3G6eEXm_y4Oy63A", // YOUR KEY
+            authDomain: "abtesting-b5e74.firebaseapp.com",
+            projectId: "abtesting-b5e74",
+            storageBucket: "abtesting-b5e74.appspot.com",
+            messagingSenderId: "666001775188",
+            appId: "1:666001775188:web:621a429527a9869f946bc1" // YOUR APP ID
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
 
-    const urlParams = new URLSearchParams(window.location.search);
-    const pageVersion = urlParams.get('version') || 'B'; // Default for this file
+        const pageVersion = window.ABTestPageVersion; // Use globally set version
 
-    const experimentKeyForSession = 'boxingClassABTest_v1';
-    const conversionLoggedSessionKey = `${experimentKeyForSession}_conversionLogged_session_for_${pageVersion}`;
+        const experimentKeyForConversionSession = 'boxingClassABTest_v1';
+        const conversionLoggedSessionKey = `${experimentKeyForConversionSession}_conversionLogged_session_for_${pageVersion}`;
 
-    // Get button elements once
-    const fightForgeButton = document.getElementById('joinFightForgeButton');
-    const boxingMaxButtonB = document.getElementById('joinBoxingMaxButtonB');
+        // Get button elements once for Version B
+        const fightForgeButton = document.getElementById('joinFightForgeButton');
+        const boxingMaxButtonB = document.getElementById('joinBoxingMaxButtonB');
 
-    async function logImpression() {
-        if (!pageVersion) {
-            console.warn("No pageVersion found. Impression not logged.");
-            return;
-        }
-        try {
-            await db.collection("ab_test_events").add({
-                versionShown: pageVersion,
-                event: "impression",
-                timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-                userAgent: navigator.userAgent,
-                url: window.location.href
-            });
-            console.log(`Impression logged for version ${pageVersion}`);
-        } catch (error) {
-            console.error("Error logging impression: ", error);
-        }
-    }
-    logImpression();
-
-    async function handleConversion(clickedButtonElement, buttonIdClicked, originalButtonText) {
-        if (!pageVersion) {
-            console.warn("No pageVersion found. Conversion not logged. Redirecting to thank you.");
-            window.location.href = "thankyou.html";
-            return;
-        }
-
-        // Disable both buttons
-        if (fightForgeButton) fightForgeButton.disabled = true;
-        if (boxingMaxButtonB) boxingMaxButtonB.disabled = true;
-
-        // Set text only for the clicked button
-        if (clickedButtonElement) {
-            clickedButtonElement.textContent = 'Processing...';
-        }
-
-        if (sessionStorage.getItem(conversionLoggedSessionKey) === 'true') {
-            console.log(`Conversion already logged this session for ${pageVersion} (button ${buttonIdClicked}). Redirecting to thank you.`);
-            // Buttons will remain disabled as we redirect
-            window.location.href = "thankyou.html";
-            return;
-        }
-
-        try {
-            await db.collection("ab_test_events").add({
-                versionShown: pageVersion,
-                event: "conversion",
-                buttonId: buttonIdClicked,
-                buttonText: originalButtonText,
-                timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-                userAgent: navigator.userAgent,
-                url: window.location.href
-            });
-            console.log(`Conversion logged for version ${pageVersion}, button: ${buttonIdClicked}`);
-            sessionStorage.setItem(conversionLoggedSessionKey, 'true');
-            // Buttons will remain disabled as we redirect
-            window.location.href = "thankyou.html";
-        } catch (error) {
-            console.error(`Error logging conversion for ${buttonIdClicked}: `, error);
-            
-            // Re-enable both buttons
-            if (fightForgeButton) fightForgeButton.disabled = false;
-            if (boxingMaxButtonB) boxingMaxButtonB.disabled = false;
-
-            // Restore original text for the clicked button
-            if (clickedButtonElement) {
-                clickedButtonElement.textContent = originalButtonText;
+        async function logImpression() {
+            if (!pageVersion) {
+                console.warn("No pageVersion found (unexpected). Impression not logged.");
+                return;
             }
-            // alert("An error occurred while processing your request. Please try again.");
+            try {
+                await db.collection("ab_test_events").add({
+                    versionShown: pageVersion,
+                    event: "impression",
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                    userAgent: navigator.userAgent,
+                    url: window.location.href
+                });
+                console.log(`Impression logged for version ${pageVersion}`);
+            } catch (error) {
+                console.error("Error logging impression: ", error);
+            }
         }
-    }
+        logImpression(); // Will only be called if ABTestShouldProceed is true
 
-    if (fightForgeButton) {
-        fightForgeButton.addEventListener('click', function(event) {
-            event.preventDefault();
-            handleConversion(this, 'joinFightForgeButton', 'Join Fight & Forge!');
-        });
-    }
+        async function handleConversion(clickedButtonElement, buttonIdClicked, originalButtonText) {
+            if (!pageVersion) {
+                console.warn("No pageVersion found. Conversion not logged. Redirecting to thank you.");
+                window.location.href = "thankyou.html";
+                return;
+            }
 
-    if (boxingMaxButtonB) {
-        boxingMaxButtonB.addEventListener('click', function(event) {
-            event.preventDefault();
-            handleConversion(this, 'joinBoxingMaxButtonB', 'Join Boxing with Max!');
-        });
+            // Disable both buttons for Version B
+            if (fightForgeButton) fightForgeButton.disabled = true;
+            if (boxingMaxButtonB) boxingMaxButtonB.disabled = true;
+
+            // Set text only for the clicked button
+            if (clickedButtonElement) {
+                clickedButtonElement.textContent = 'Processing...';
+            }
+
+            if (sessionStorage.getItem(conversionLoggedSessionKey) === 'true') {
+                console.log(`Conversion already logged this session for ${pageVersion} (button ${buttonIdClicked}). Redirecting to thank you.`);
+                window.location.href = "thankyou.html";
+                return;
+            }
+
+            try {
+                await db.collection("ab_test_events").add({
+                    versionShown: pageVersion,
+                    event: "conversion",
+                    buttonId: buttonIdClicked,
+                    buttonText: originalButtonText,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                    userAgent: navigator.userAgent,
+                    url: window.location.href
+                });
+                console.log(`Conversion logged for version ${pageVersion}, button: ${buttonIdClicked}`);
+                sessionStorage.setItem(conversionLoggedSessionKey, 'true');
+                window.location.href = "thankyou.html";
+            } catch (error) {
+                console.error(`Error logging conversion for ${buttonIdClicked}: `, error);
+                
+                // Re-enable both buttons for Version B
+                if (fightForgeButton) fightForgeButton.disabled = false;
+                if (boxingMaxButtonB) boxingMaxButtonB.disabled = false;
+
+                // Restore original text for the clicked button
+                if (clickedButtonElement) {
+                    clickedButtonElement.textContent = originalButtonText;
+                }
+                // alert("An error occurred while processing your request. Please try again.");
+            }
+        }
+
+        if (fightForgeButton) {
+            fightForgeButton.addEventListener('click', function(event) {
+                event.preventDefault();
+                handleConversion(this, 'joinFightForgeButton', 'Join Fight & Forge!');
+            });
+        }
+
+        if (boxingMaxButtonB) {
+            boxingMaxButtonB.addEventListener('click', function(event) {
+                event.preventDefault();
+                handleConversion(this, 'joinBoxingMaxButtonB', 'Join Boxing with Max!');
+            });
+        }
+    } else {
+        console.log("Main script for versionB.html skipped due to redirection or failed pre-checks.");
+        // Optionally hide content if redirection is slow, though usually not an issue.
+        // document.body.style.visibility = 'hidden';
     }
 </script>
 
