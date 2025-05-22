@@ -5,23 +5,41 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Redirecting...</title>
     <script>
-        // Decide which version to show (A or B)
-        const version = Math.random() < 0.5 ? 'A' : 'B';
+        const experimentKey = 'boxingClassABTest_v1'; // Unique key
+        const participationFlagKey = `${experimentKey}_participated`;
+        const assignedVersionKey = `${experimentKey}_assignedVersion`;
 
-        // Redirect to the chosen version, passing the version as a URL parameter
-        if (version === 'A') {
-            window.location.href = `versionA.html?version=A`;
+        // --- DEBUGGING LINES - Add these ---
+        console.log("Checking localStorage for:", participationFlagKey, "Value:", localStorage.getItem(participationFlagKey));
+        console.log("Checking localStorage for:", assignedVersionKey, "Value:", localStorage.getItem(assignedVersionKey));
+        // --- END DEBUGGING LINES ---
+
+        const hasParticipated = localStorage.getItem(participationFlagKey);
+        const previouslyAssignedVersion = localStorage.getItem(assignedVersionKey);
+
+        if (hasParticipated === 'true' && previouslyAssignedVersion) { // Explicitly check for 'true' string
+            console.log(`User has participated. Re-assigning to version: ${previouslyAssignedVersion} as revisit.`);
+            if (previouslyAssignedVersion === 'A') {
+                window.location.href = `versionA.html?version=A&revisit=true`;
+            } else { // Must be 'B'
+                window.location.href = `versionB.html?version=B&revisit=true`;
+            }
         } else {
-            window.location.href = `versionB.html?version=B`;
+            console.log("First time participation in this experiment.");
+            localStorage.setItem(participationFlagKey, 'true'); // Set participation flag
+            localStorage.setItem(assignedVersionKey, Math.random() < 0.5 ? 'A' : 'B'); // Store assigned version
+
+            const versionToRedirect = localStorage.getItem(assignedVersionKey); // Get the just-set version
+
+            if (versionToRedirect === 'A') {
+                window.location.href = `versionA.html?version=A`;
+            } else {
+                window.location.href = `versionB.html?version=B`;
+            }
         }
     </script>
 </head>
 <body>
-    <p>If you are not redirected automatically, please <a id="redirect-link" href="#">click here</a>.</p>
-    <script>
-        // Fallback link update (optional, but good practice)
-        const versionForLink = Math.random() < 0.5 ? 'A' : 'B'; // Recalculate in case script above failed to run fast
-        document.getElementById('redirect-link').href = versionForLink === 'A' ? 'versionA.html?version=A' : 'versionB.html?version=B';
-    </script>
+    <p>If you are not redirected automatically, please refresh the page or clear your browser's site data for this page and try again.</p>
 </body>
 </html>
