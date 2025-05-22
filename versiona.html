@@ -3,17 +3,19 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-  <title>Boxing Class Signup</title>
+  <!-- This title should be unique to Version A if the page title is part of your test -->
+  <title>Version A - Boxing Class Signup</title>
 
   <!-- Bootstrap CSS -->
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
-  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/style.css"> <!-- Make sure this path is correct -->
 </head>
 <body>
 
 <header class="bg-dark text-white p-3">
   <div class="container">
-    <h1 class="mb-0">Choose Your Boxing Class</h1>
+    <!-- This H1 could be part of your A/B test variation -->
+    <h1 class="mb-0">Version A: Choose Your Boxing Class</h1>
   </div>
 </header>
 
@@ -30,19 +32,22 @@
             <h5 class="card-title">Punch & Power</h5>
             <p class="card-text">An intense full-body workout with boxing combos, strength circuits, and high-energy music. Perfect for all levels!</p>
             <p class="text-muted">Thursday • 18:00 – 19:00</p>
-            <a href="#" class="btn btn-primary btn-block">Join Punch & Power!</a>
+            <!-- Added ID to this button -->
+            <button id="joinPunchPowerButton" class="btn btn-primary btn-block">Join Punch & Power!</button>
           </div>
         </div>
       </div>
 
+      <!-- Class 2 -->
       <div class="col-md-6">
         <div class="card mb-4 shadow-sm">
-          <img src="2.jpg" class="card-img-top" style="height:250px; object-fit:cover; width:100%;" alt="PowerBox class">
+          <img src="2.jpg" class="card-img-top" style="height:250px; object-fit:cover; width:100%;" alt="Boxing with Max class"> <!-- Alt text updated slightly -->
           <div class="card-body">
-            <h5 class="card-title">Boxing with max!</h5>
+            <h5 class="card-title">Boxing with Max!</h5>
             <p class="card-text">An intense full-body workout with boxing combos, strength circuits, and high-energy music. Perfect for all levels!</p>
             <p class="text-muted">Thursday • 18:00 – 19:00</p>
-            <a href="#" class="btn btn-primary btn-block">Join Boxing with Max!</a>
+            <!-- Added ID to this button -->
+            <button id="joinBoxingMaxButton" class="btn btn-primary btn-block">Join Boxing with Max!</button>
           </div>
         </div>
       </div>
@@ -62,21 +67,87 @@
 <script src="https://cdn.jsdelivr.net/npm/popper.js@1.12.9/dist/umd/popper.min.js"></script>
 <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
 
-<!-- this code is javascript to track visitors -->
+<!-- Firebase SDKs -->
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+
 <script>
-  const version = window.location.pathname.includes("indexb") ? "B" : "A";
-  
-  fetch("https://your-replit-url.repl.co/log", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      version: version,
-      event: "view",
-      timestamp: new Date().toISOString()
-    })
-  });
+    // 1. Initialize Firebase with your config (Looks correct, but careful with sharing API keys publicly)
+    const firebaseConfig = {
+        apiKey: "AIzaSyBtHLjsIq1UmdXpsAHb3G6eEXm_y4Oy63A", // Note: API keys for client-side Firebase are generally okay to be public if your Firestore rules are secure.
+        authDomain: "abtesting-b5e74.firebaseapp.com",
+        projectId: "abtesting-b5e74",
+        storageBucket: "abtesting-b5e74.appspot.com", // Corrected .appspot.com instead of .firebasestorage.app
+        messagingSenderId: "666001775188",
+        appId: "1:666001775188:web:621a429527a9869f946bc1"
+      };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    // 2. Get version from URL parameter (This expects your redirector `index.html` to pass ?version=A or ?version=B)
+    const urlParams = new URLSearchParams(window.location.search);
+    const pageVersion = urlParams.get('version') || 'A'; // Default to 'A' if not passed, or 'unknown'
+
+    // 3. Log an "impression" when the page loads
+    async function logImpression() {
+        try {
+            await db.collection("ab_test_events").add({
+                versionShown: pageVersion,
+                event: "impression",
+                timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                userAgent: navigator.userAgent,
+                url: window.location.href
+            });
+            console.log(`Impression logged for version ${pageVersion}`);
+        } catch (error) {
+            console.error("Error logging impression: ", error);
+        }
+    }
+    logImpression(); // Log impression on page load
+
+    // 4. Function to log a conversion and redirect
+    async function handleConversion(buttonIdClicked, buttonTextClicked) {
+        try {
+            await db.collection("ab_test_events").add({
+                versionShown: pageVersion,
+                event: "conversion",
+                buttonId: buttonIdClicked, // Log which button was clicked
+                buttonText: buttonTextClicked, // Log the text of the button
+                timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                userAgent: navigator.userAgent,
+                url: window.location.href
+            });
+            console.log(`Conversion logged for version ${pageVersion}, button: ${buttonIdClicked}`);
+            window.location.href = "thankyou.html"; // Redirect to thank you page
+        } catch (error) {
+            console.error("Error logging conversion: ", error);
+            // Optionally, inform the user or still redirect
+            // alert("An error occurred while processing your request. Please try again.");
+            // window.location.href = "thankyou.html"; // You might still redirect even on error
+        }
+    }
+
+    // 5. Add event listeners to your CTA buttons
+    const punchPowerButton = document.getElementById('joinPunchPowerButton');
+    const boxingMaxButton = document.getElementById('joinBoxingMaxButton');
+
+    if (punchPowerButton) {
+        punchPowerButton.addEventListener('click', (event) => {
+            event.preventDefault(); // Prevent default <a> tag behavior if it were a link
+            handleConversion('joinPunchPowerButton', punchPowerButton.textContent.trim());
+        });
+    } else {
+        console.warn("Button with ID 'joinPunchPowerButton' not found!");
+    }
+
+    if (boxingMaxButton) {
+        boxingMaxButton.addEventListener('click', (event) => {
+            event.preventDefault(); // Prevent default <a> tag behavior if it were a link
+            handleConversion('joinBoxingMaxButton', boxingMaxButton.textContent.trim());
+        });
+    } else {
+        console.warn("Button with ID 'joinBoxingMaxButton' not found!");
+    }
 </script>
 
 </body>

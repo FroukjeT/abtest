@@ -1,24 +1,27 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>AB Test Redirect</title>
-  <script>
-    // Check if variant already set for user
-    let variant = localStorage.getItem('ab-variant');
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Redirecting...</title>
+    <script>
+        // Decide which version to show (A or B)
+        const version = Math.random() < 0.5 ? 'A' : 'B';
 
-    if (!variant) {
-      variant = Math.random() < 0.5 ? 'A' : 'B';
-      localStorage.setItem('ab-variant', variant);
-    }
-
-    if (variant === 'A') {
-      window.location.href = '/';
-    } else {
-      window.location.href = '/indexb';
-    }
-  </script>
+        // Redirect to the chosen version, passing the version as a URL parameter
+        if (version === 'A') {
+            window.location.href = `versionA.html?version=A`;
+        } else {
+            window.location.href = `versionB.html?version=B`;
+        }
+    </script>
 </head>
 <body>
-  Redirecting...
+    <p>If you are not redirected automatically, please <a id="redirect-link" href="#">click here</a>.</p>
+    <script>
+        // Fallback link update (optional, but good practice)
+        const versionForLink = Math.random() < 0.5 ? 'A' : 'B'; // Recalculate in case script above failed to run fast
+        document.getElementById('redirect-link').href = versionForLink === 'A' ? 'versionA.html?version=A' : 'versionB.html?version=B';
+    </script>
 </body>
 </html>

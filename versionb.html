@@ -3,17 +3,19 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-  <title>Boxing Class Signup</title>
+  <!-- This title should be unique to Version B if the page title is part of your test -->
+  <title>Version B - Boxing Class Options</title>
 
   <!-- Bootstrap CSS -->
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
-  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/style.css"> <!-- Make sure this path is correct -->
 </head>
 <body>
 
 <header class="bg-dark text-white p-3">
   <div class="container">
-    <h1 class="mb-0">Choose Your Boxing Class</h1>
+    <!-- This H1 could be part of your A/B test variation -->
+    <h1 class="mb-0">Version B: Discover Your Boxing Style</h1>
   </div>
 </header>
 
@@ -25,24 +27,31 @@
       <!-- Class 1 -->
       <div class="col-md-6">
         <div class="card mb-4 shadow-sm">
-          <img src="2.jpg" class="card-img-top" style="height:250px; object-fit:cover; width:100%;" alt="PowerBox class">
+          <img src="2.jpg" class="card-img-top" style="height:250px; object-fit:cover; width:100%;" alt="Fight & Forge class"> <!-- Alt text updated for this class -->
           <div class="card-body">
             <h5 class="card-title">Fight & Forge</h5>
             <p class="card-text">An intense full-body workout with boxing combos, strength circuits, and high-energy music. Perfect for all levels!</p>
             <p class="text-muted">Thursday • 18:00 – 19:00</p>
-            <a href="#" class="btn btn-primary btn-block">Join Fight & Forge!</a>
+            <!-- Added ID to this button -->
+            <button id="joinFightForgeButton" class="btn btn-primary btn-block">Join Fight & Forge!</button>
           </div>
         </div>
       </div>
 
+      <!-- Class 2 (Assuming "Boxing with Max!" is the same offering as in Version A) -->
       <div class="col-md-6">
         <div class="card mb-4 shadow-sm">
-          <img src="2.jpg" class="card-img-top" style="height:250px; object-fit:cover; width:100%;" alt="PowerBox class">
+          <img src="2.jpg" class="card-img-top" style="height:250px; object-fit:cover; width:100%;" alt="Boxing with Max class">
           <div class="card-body">
-            <h5 class="card-title">Boxing with max!</h5>
+            <h5 class="card-title">Boxing with Max!</h5>
             <p class="card-text">An intense full-body workout with boxing combos, strength circuits, and high-energy music. Perfect for all levels!</p>
             <p class="text-muted">Thursday • 18:00 – 19:00</p>
-            <a href="#" class="btn btn-primary btn-block">Join Boxing with Max!</a>
+            <!-- Added ID to this button (can be the same ID if the offering is identical, or a new one if slightly different) -->
+            <button id="joinBoxingMaxButtonB" class="btn btn-primary btn-block">Join Boxing with Max!</button>
+            <!-- Note: I used 'joinBoxingMaxButtonB' for clarity in case Version B's "Boxing with Max" is subtly different or you want to track it separately.
+                 If it's truly identical, you could reuse 'joinBoxingMaxButton' from Version A.
+                 For robust tracking of *which version* led to the click on an identical offering, the `pageVersion` field in Firestore is key.
+            -->
           </div>
         </div>
       </div>
@@ -62,70 +71,87 @@
 <script src="https://cdn.jsdelivr.net/npm/popper.js@1.12.9/dist/umd/popper.min.js"></script>
 <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
 
-<!-- this code is javascript to track visitors -->
 <!-- Firebase SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
 
-    <script>
-        // 1. Initialize Firebase with your config
-        const firebaseConfig = {
-            apiKey: "AIzaSyBtHLjsIq1UmdXpsAHb3G6eEXm_y4Oy63A",
-            authDomain: "abtesting-b5e74.firebaseapp.com",
-            projectId: "abtesting-b5e74",
-            storageBucket: "abtesting-b5e74.firebasestorage.app",
-            messagingSenderId: "666001775188",
-            appId: "1:666001775188:web:621a429527a9869f946bc1"
-          };
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
+<script>
+    // 1. Initialize Firebase with your config (Looks correct, but careful with sharing API keys publicly)
+    const firebaseConfig = {
+        apiKey: "AIzaSyBtHLjsIq1UmdXpsAHb3G6eEXm_y4Oy63A",
+        authDomain: "abtesting-b5e74.firebaseapp.com",
+        projectId: "abtesting-b5e74",
+        storageBucket: "abtesting-b5e74.appspot.com", // Corrected .appspot.com
+        messagingSenderId: "666001775188",
+        appId: "1:666001775188:web:621a429527a9869f946bc1"
+      };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
 
-        // 2. Get version from URL parameter
-        const urlParams = new URLSearchParams(window.location.search);
-        const pageVersion = urlParams.get('version') || 'unknown'; // Default to 'unknown' if not passed
+    // 2. Get version from URL parameter (This expects your redirector `index.html` to pass ?version=A or ?version=B)
+    const urlParams = new URLSearchParams(window.location.search);
+    const pageVersion = urlParams.get('version') || 'B'; // Default to 'B' if not passed, or 'unknown'
 
-        // 3. Log an "impression" when the page loads
-        async function logImpression() {
-            try {
-                await db.collection("ab_test_events").add({
-                    versionShown: pageVersion,
-                    event: "impression",
-                    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-                    userAgent: navigator.userAgent, // Optional: collect browser info
-                    url: window.location.href
-                });
-                console.log(`Impression logged for version ${pageVersion}`);
-            } catch (error) {
-                console.error("Error logging impression: ", error);
-            }
-        }
-        logImpression(); // Log impression on page load
-
-        // 4. Log a "conversion" when the Call To Action button is clicked
-        const ctaButton = document.getElementById('ctaButton');
-        if (ctaButton) {
-            ctaButton.addEventListener('click', async () => {
-                try {
-                    await db.collection("ab_test_events").add({
-                        versionShown: pageVersion,
-                        event: "conversion", // Or more specific like "signup_click"
-                        buttonId: ctaButton.id,
-                        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-                        userAgent: navigator.userAgent,
-                        url: window.location.href
-                    });
-                    console.log(`Conversion logged for version ${pageVersion}`);
-                    // Optionally, redirect the user after conversion or show a thank you message
-                    // alert("Thanks for signing up!");
-                    // window.location.href = "/thank-you.html";
-                } catch (error) {
-                    console.error("Error logging conversion: ", error);
-                }
+    // 3. Log an "impression" when the page loads
+    async function logImpression() {
+        try {
+            await db.collection("ab_test_events").add({
+                versionShown: pageVersion, // This will be 'B' (or what's passed in URL)
+                event: "impression",
+                timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                userAgent: navigator.userAgent,
+                url: window.location.href
             });
-        } else {
-            console.warn("CTA Button not found!");
+            console.log(`Impression logged for version ${pageVersion}`);
+        } catch (error) {
+            console.error("Error logging impression: ", error);
         }
-    </script>
+    }
+    logImpression(); // Log impression on page load
+
+    // 4. Function to log a conversion and redirect
+    async function handleConversion(buttonIdClicked, buttonTextClicked) {
+        try {
+            await db.collection("ab_test_events").add({
+                versionShown: pageVersion, // This will be 'B'
+                event: "conversion",
+                buttonId: buttonIdClicked,
+                buttonText: buttonTextClicked,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                userAgent: navigator.userAgent,
+                url: window.location.href
+            });
+            console.log(`Conversion logged for version ${pageVersion}, button: ${buttonIdClicked}`);
+            window.location.href = "thankyou.html"; // Redirect to thank you page
+        } catch (error) {
+            console.error("Error logging conversion: ", error);
+            // Optionally, inform the user or still redirect
+            // window.location.href = "thankyou.html";
+        }
+    }
+
+    // 5. Add event listeners to your CTA buttons
+    const fightForgeButton = document.getElementById('joinFightForgeButton');
+    const boxingMaxButtonB = document.getElementById('joinBoxingMaxButtonB'); // Using the ID from this page
+
+    if (fightForgeButton) {
+        fightForgeButton.addEventListener('click', (event) => {
+            event.preventDefault();
+            handleConversion('joinFightForgeButton', fightForgeButton.textContent.trim());
+        });
+    } else {
+        console.warn("Button with ID 'joinFightForgeButton' not found!");
+    }
+
+    if (boxingMaxButtonB) {
+        boxingMaxButtonB.addEventListener('click', (event) => {
+            event.preventDefault();
+            handleConversion('joinBoxingMaxButtonB', boxingMaxButtonB.textContent.trim());
+        });
+    } else {
+        console.warn("Button with ID 'joinBoxingMaxButtonB' not found!");
+    }
+</script>
 
 </body>
 </html>
