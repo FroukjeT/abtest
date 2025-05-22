@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
   <link rel="stylesheet" href="css/style.css">
 
-    <script>
+  <script>
     // SCRIPT AT THE TOP OF <HEAD>
     const experimentKey = 'boxingClassABTest_v1';
     const participationFlagKey = `${experimentKey}_participated`;
@@ -23,11 +23,11 @@
     let redirectTo = '';
 
     if (hasParticipatedFlagInStorage === 'true' && !isNewbieComingFromIndex) {
-        console.log("VERSION PAGE HEAD: User has 'participated' flag and is NOT a 'newbie'. Redirecting to already_participated.html.");
+        console.log("VERSION PAGE HEAD (B): User has 'participated' flag and is NOT a 'newbie'. Redirecting to already_participated.html.");
         shouldRedirect = true;
         redirectTo = 'already_participated.html';
     } else if (!versionFromUrl && !isNewbieComingFromIndex) {
-        console.log("VERSION PAGE HEAD: Direct access without version parameter (and not a newbie). Redirecting to index.html.");
+        console.log("VERSION PAGE HEAD (B): Direct access without version parameter (and not a newbie). Redirecting to index.html.");
         shouldRedirect = true;
         redirectTo = 'index.html';
     }
@@ -41,7 +41,7 @@
 
 <header class="bg-dark text-white p-3">
   <div class="container">
-    <h1 class="mb-0">Choose Your Boxing Class</h1>
+    <h1 class="mb-0">Version B: Discover Your Boxing Style</h1>
   </div>
 </header>
 
@@ -101,14 +101,13 @@
     const db = firebase.firestore();
 
     const urlParams = new URLSearchParams(window.location.search);
-    const pageVersion = urlParams.get('version') || 'B'; // Default to 'B' for this file
-
-    // Check if the early script in <head> would have redirected.
-    // This is a fallback to prevent logging if the head script's redirect didn't occur or was bypassed.
-    const shouldLog = ! (localStorage.getItem('boxingClassABTest_v1_participated') === 'true' && localStorage.getItem('boxingClassABTest_v1_assignedVersion')) && pageVersion;
-
+    const pageVersion = urlParams.get('version') || 'B'; // Default for this file
 
     async function logImpression() {
+        if (!pageVersion) {
+            console.warn("No pageVersion found in URL on version page. Impression not logged.");
+            return;
+        }
         try {
             await db.collection("ab_test_events").add({
                 versionShown: pageVersion,
@@ -122,17 +121,12 @@
             console.error("Error logging impression: ", error);
         }
     }
-
-    if (shouldLog) {
-        logImpression();
-    }
-
+    logImpression();
 
     async function handleConversion(buttonIdClicked, buttonTextClicked) {
-        // Conversion should only be logged if impression was logged (i.e., not a bypass)
-        if (!shouldLog) {
-            console.log("Bypassed user or no valid version, conversion not logged. Redirecting to thank you.");
-            window.location.href = "thankyou.html"; // Still go to thank you for UX
+        if (!pageVersion) {
+            console.warn("No pageVersion found in URL on version page. Conversion not logged. Redirecting to thank you.");
+            window.location.href = "thankyou.html";
             return;
         }
         try {
@@ -152,7 +146,6 @@
         }
     }
 
-    // Attach event listeners
     const fightForgeButton = document.getElementById('joinFightForgeButton');
     const boxingMaxButtonB = document.getElementById('joinBoxingMaxButtonB');
 

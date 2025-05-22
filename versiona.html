@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
   <link rel="stylesheet" href="css/style.css">
 
-      <script>
+  <script>
     // SCRIPT AT THE TOP OF <HEAD>
     const experimentKey = 'boxingClassABTest_v1';
     const participationFlagKey = `${experimentKey}_participated`;
@@ -23,11 +23,11 @@
     let redirectTo = '';
 
     if (hasParticipatedFlagInStorage === 'true' && !isNewbieComingFromIndex) {
-        console.log("VERSION PAGE HEAD: User has 'participated' flag and is NOT a 'newbie'. Redirecting to already_participated.html.");
+        console.log("VERSION PAGE HEAD (A): User has 'participated' flag and is NOT a 'newbie'. Redirecting to already_participated.html.");
         shouldRedirect = true;
         redirectTo = 'already_participated.html';
     } else if (!versionFromUrl && !isNewbieComingFromIndex) {
-        console.log("VERSION PAGE HEAD: Direct access without version parameter (and not a newbie). Redirecting to index.html.");
+        console.log("VERSION PAGE HEAD (A): Direct access without version parameter (and not a newbie). Redirecting to index.html.");
         shouldRedirect = true;
         redirectTo = 'index.html';
     }
@@ -38,15 +38,48 @@
   </script>
 </head>
 <body>
-    <!-- ... Rest of your versionA.html body content (header, main, footer) ... -->
-    <!-- MAKE SURE THE FIREBASE SCRIPT IS BELOW THIS CONTENT -->
 
 <header class="bg-dark text-white p-3">
   <div class="container">
-    <h1 class="mb-0">Choose Your Boxing Class</h1>
+    <h1 class="mb-0">Version A: Choose Your Boxing Class</h1>
   </div>
 </header>
-<!-- ... etc ... main content ... footer ... -->
+
+<main class="py-5 bg-light">
+  <div class="container">
+    <p class="text-center mb-5">Both classes are scheduled for <strong>Thursday, 18:00 - 19:00</strong>. Same content, different vibe — pick your favorite!</p>
+    <div class="row">
+      <div class="col-md-6">
+        <div class="card mb-4 shadow-sm">
+          <img src="2.jpg" class="card-img-top" style="height:250px; object-fit:cover; width:100%;" alt="PowerBox class">
+          <div class="card-body">
+            <h5 class="card-title">Punch & Power</h5>
+            <p class="card-text">An intense full-body workout with boxing combos, strength circuits, and high-energy music. Perfect for all levels!</p>
+            <p class="text-muted">Thursday • 18:00 – 19:00</p>
+            <button id="joinPunchPowerButton" class="btn btn-primary btn-block">Join Punch & Power!</button>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="card mb-4 shadow-sm">
+          <img src="2.jpg" class="card-img-top" style="height:250px; object-fit:cover; width:100%;" alt="Boxing with Max class">
+          <div class="card-body">
+            <h5 class="card-title">Boxing with Max!</h5>
+            <p class="card-text">An intense full-body workout with boxing combos, strength circuits, and high-energy music. Perfect for all levels!</p>
+            <p class="text-muted">Thursday • 18:00 – 19:00</p>
+            <button id="joinBoxingMaxButton" class="btn btn-primary btn-block">Join Boxing with Max!</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer class="bg-dark text-white text-center py-3">
+  <div class="container">
+    <p class="mb-0">© 2025 Boxing Club</p>
+  </div>
+</footer>
 
 <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/popper.js@1.12.9/dist/umd/popper.min.js"></script>
@@ -56,9 +89,6 @@
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
 
 <script>
-    // This script now assumes it's only reached by "new" users
-    // or that the early check script above has handled redirects for participated users.
-
     const firebaseConfig = {
         apiKey: "AIzaSyBtHLjsIq1UmdXpsAHb3G6eEXm_y4Oy63A", // Your actual API key
         authDomain: "abtesting-b5e74.firebaseapp.com",
@@ -71,12 +101,13 @@
     const db = firebase.firestore();
 
     const urlParams = new URLSearchParams(window.location.search);
-    const pageVersion = urlParams.get('version') || 'A'; // Or 'B' for versionB.html
-
-    // No more 'isRevisit' check needed here if using the "already_participated.html" flow
-    // and the early <script> in <head> handles redirects.
+    const pageVersion = urlParams.get('version') || 'A'; // Default for this file
 
     async function logImpression() {
+        if (!pageVersion) {
+            console.warn("No pageVersion found in URL on version page. Impression not logged.");
+            return;
+        }
         try {
             await db.collection("ab_test_events").add({
                 versionShown: pageVersion,
@@ -90,14 +121,14 @@
             console.error("Error logging impression: ", error);
         }
     }
-    // Only log impression if the early check didn't redirect
-    // The early check should prevent this script from running fully if a redirect happens
-    if (!(localStorage.getItem(participationFlagKey) === 'true' && localStorage.getItem(assignedVersionKey)) && pageVersion) {
-        logImpression();
-    }
-
+    logImpression();
 
     async function handleConversion(buttonIdClicked, buttonTextClicked) {
+        if (!pageVersion) {
+            console.warn("No pageVersion found in URL on version page. Conversion not logged. Redirecting to thank you.");
+            window.location.href = "thankyou.html";
+            return;
+        }
         try {
             await db.collection("ab_test_events").add({
                 versionShown: pageVersion,
@@ -115,7 +146,6 @@
         }
     }
 
-    // Attach event listeners
     const punchPowerButton = document.getElementById('joinPunchPowerButton');
     const boxingMaxButton = document.getElementById('joinBoxingMaxButton');
 
